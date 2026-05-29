@@ -27,7 +27,7 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: "Development"
       ConnectionStrings__DefaultConnection: "Server=sqlserver;Database=InventoryDB;User Id=sa;Password=Admin@admin1;TrustServerCertificate=True"
-      Jwt__Key: "aksjn2NI98SQ@SAIOD_1"
+      Jwt__Key: "S3cur3K3y_Inv3nt0rySystem_2024!@#$$%^&*()_+"
       Jwt__Issuer: "InventoryAPI"
       Jwt__Audience: "InventoryClient"
     depends_on:
