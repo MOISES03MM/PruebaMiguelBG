@@ -76,6 +76,9 @@ public class ProductService : IProductService
         if (skuConflict != null && skuConflict.Id != id)
             throw new InvalidOperationException($"Ya existe otro producto con SKU '{dto.SKU}'");
 
+        if (dto.Stock < 0)
+            throw new InvalidOperationException("El stock no puede ser negativo");
+
         product.Name = dto.Name;
         product.Description = dto.Description;
         product.Category = dto.Category;
@@ -114,13 +117,17 @@ public class ProductService : IProductService
         var product = await _productRepository.GetByIdAsync(productId);
         if (product == null) return null;
 
-        var lots = await _lotRepository.GetByProductIdAsync(productId);
-        var assignedQuantity = lots.Sum(l => l.Quantity);
-        var available = product.Stock - assignedQuantity;
+        var existingLots = await _lotRepository.GetByProductIdAsync(productId);
+        if (existingLots.Any(l => l.LotNumber == dto.LotNumber))
+            throw new InvalidOperationException($"Ya existe un lote con número '{dto.LotNumber}'");
 
-        if (dto.Quantity > available)
+        if (dto.Quantity > product.Stock)
             throw new InvalidOperationException(
-                $"Stock insuficiente. Disponible: {available}, solicitado: {dto.Quantity}");
+                $"Stock insuficiente. Disponible: {product.Stock}, solicitado: {dto.Quantity}");
+
+        product.Stock -= dto.Quantity;
+        product.UpdatedAt = DateTime.UtcNow;
+        await _productRepository.UpdateAsync(product);
 
         var lot = new ProductLot
         {
@@ -134,7 +141,7 @@ public class ProductService : IProductService
         };
 
         await _lotRepository.CreateAsync(lot);
-        _logger.LogInformation("Lot created: {LotId} for product {ProductId}", lot.Id, productId);
+        _logger.LogInformation("Lot created: {LotId} for product {ProductId}. Stock restante: {Stock}", lot.Id, productId, product.Stock);
 
         return MapLotToDto(lot);
     }
@@ -147,13 +154,19 @@ public class ProductService : IProductService
         var product = await _productRepository.GetByIdAsync(productId);
         if (product == null) return null;
 
-        var lots = await _lotRepository.GetByProductIdAsync(productId);
-        var assignedQuantity = lots.Where(l => l.Id != lotId).Sum(l => l.Quantity);
-        var available = product.Stock - assignedQuantity;
+        var existingLots = await _lotRepository.GetByProductIdAsync(productId);
+        if (existingLots.Any(l => l.LotNumber == dto.LotNumber && l.Id != lotId))
+            throw new InvalidOperationException($"Ya existe otro lote con número '{dto.LotNumber}'");
 
-        if (dto.Quantity > available)
+        var difference = dto.Quantity - lot.Quantity;
+
+        if (difference > 0 && difference > product.Stock)
             throw new InvalidOperationException(
-                $"Stock insuficiente. Disponible: {available}, solicitado: {dto.Quantity}");
+                $"Stock insuficiente. Disponible: {product.Stock}, adicional solicitado: {difference}");
+
+        product.Stock -= difference;
+        product.UpdatedAt = DateTime.UtcNow;
+        await _productRepository.UpdateAsync(product);
 
         lot.LotNumber = dto.LotNumber;
         lot.Price = dto.Price;
@@ -162,7 +175,7 @@ public class ProductService : IProductService
         lot.Notes = dto.Notes;
 
         await _lotRepository.UpdateAsync(lot);
-        _logger.LogInformation("Lot updated: {LotId}", lotId);
+        _logger.LogInformation("Lot updated: {LotId}. Stock restante: {Stock}", lotId, product.Stock);
 
         return MapLotToDto(lot);
     }
@@ -172,8 +185,16 @@ public class ProductService : IProductService
         var lot = await _lotRepository.GetByIdAsync(lotId);
         if (lot == null || lot.ProductId != productId) return false;
 
+        var product = await _productRepository.GetByIdAsync(productId);
+        if (product != null)
+        {
+            product.Stock += lot.Quantity;
+            product.UpdatedAt = DateTime.UtcNow;
+            await _productRepository.UpdateAsync(product);
+        }
+
         await _lotRepository.DeleteAsync(lot);
-        _logger.LogInformation("Lot deleted: {LotId}", lotId);
+        _logger.LogInformation("Lot deleted: {LotId}. Stock devuelto: {Quantity}", lotId, lot.Quantity);
 
         return true;
     }

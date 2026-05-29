@@ -39,6 +39,12 @@ Eso es todo. Docker levanta los 3 servicios:
 
 > El backend aplica migraciones y seed de datos automáticamente al arrancar. No se requiere ningún paso adicional.
 
+### Nota sobre la comunicación Frontend → Backend en Docker
+
+En Docker, el frontend se sirve con nginx. Las peticiones a `/api/*` se redirigen internamente al contenedor del backend mediante un proxy en nginx. El frontend no necesita conocer la URL del backend directamente.
+
+La variable `VITE_API_URL` en el `docker-compose.yml` es solo documentativa — Vite inyecta variables de entorno en build time, no en runtime. El `.dockerignore` excluye el `.env` local para que el build en Docker use rutas relativas (`/api/...`) que nginx proxea al backend.
+
 ### Comandos útiles
 
 ```bash
@@ -73,7 +79,7 @@ Asegúrate de tener una instancia de SQL Server corriendo. Puedes usar:
 - SQL Server en Docker (solo la instancia):
 
 ```bash
-docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=admin@admin" -p 1433:1433 -d mcr.microsoft.com/mssql/server:2022-latest
+docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=Admin@admin1" -p 1433:1433 -d mcr.microsoft.com/mssql/server:2022-latest
 ```
 
 ### 2. Backend
@@ -84,16 +90,13 @@ cd backend/InventorySystem
 # Restaurar paquetes
 dotnet restore
 
-# Aplicar migraciones (crea la BD y tablas)
-dotnet ef database update
-
-# Ejecutar la API
+# Ejecutar la API (crea la BD y aplica migraciones automáticamente)
 dotnet run
 ```
 
 La API estará disponible en: http://localhost:5139 (o el puerto que indique la consola)
 
-> Al arrancar, el backend ejecuta `Database.Migrate()` y el `DbSeeder` automáticamente, así que `dotnet ef database update` es opcional si simplemente ejecutas `dotnet run`.
+> Al arrancar, el backend ejecuta `Database.Migrate()` y el `DbSeeder` automáticamente.
 
 ### 3. Frontend
 
@@ -108,6 +111,8 @@ npm run dev
 ```
 
 El frontend estará disponible en: http://localhost:5173
+
+En desarrollo local, el archivo `frontend/.env` define `VITE_API_URL=http://localhost:5000` para que las peticiones apunten al backend. Si tu backend corre en otro puerto, ajusta esa variable.
 
 ### Configuración de conexión
 

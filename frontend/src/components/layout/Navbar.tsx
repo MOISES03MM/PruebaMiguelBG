@@ -1,5 +1,5 @@
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '../../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
 
 export function Navbar() {
   const { user, logout, isAuthenticated } = useAuthContext();
@@ -19,12 +19,12 @@ export function Navbar() {
           <div className="flex items-center gap-6">
             <h1 className="text-xl font-bold text-blue-600">Inventory System</h1>
             <div className="hidden md:flex gap-4">
-              <a href="/dashboard" className="text-gray-600 hover:text-blue-600 transition-colors">
+              <Link to="/dashboard" className="text-gray-600 hover:text-blue-600 transition-colors">
                 Dashboard
-              </a>
-              <a href="/products" className="text-gray-600 hover:text-blue-600 transition-colors">
+              </Link>
+              <Link to="/products" className="text-gray-600 hover:text-blue-600 transition-colors">
                 Products
-              </a>
+              </Link>
             </div>
           </div>
           <div className="flex items-center gap-4">

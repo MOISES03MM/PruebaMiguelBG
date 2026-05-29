@@ -19,6 +19,6 @@ public class ProductLotConfiguration : IEntityTypeConfiguration<ProductLot>
         builder.Property(l => l.Quantity).IsRequired();
         builder.Property(l => l.Notes).HasMaxLength(300);
 
-        builder.HasIndex(l => l.LotNumber);
+        builder.HasIndex(l => l.LotNumber).IsUnique();
     }
 }
