@@ -16,18 +16,50 @@ public class ProductResponseDto
     public List<ProductLotResponseDto> Lots { get; set; } = new();
 }
 
+public static class ProductCategories
+{
+    public const string Electronica = "Electronica";
+    public const string Muebles     = "Muebles";
+    public const string Ropa        = "Ropa";
+    public const string Calzado     = "Calzado";
+    public const string Alimentos   = "Alimentos";
+    public const string Bebidas     = "Bebidas";
+    public const string Herramientas = "Herramientas";
+    public const string Papeleria   = "Papeleria";
+    public const string Limpieza    = "Limpieza";
+    public const string Deportes    = "Deportes";
+    public const string Juguetes    = "Juguetes";
+    public const string Otros       = "Otros";
+
+    public static readonly string[] All =
+    [
+        Electronica, Muebles, Ropa, Calzado, Alimentos,
+        Bebidas, Herramientas, Papeleria, Limpieza, Deportes, Juguetes, Otros
+    ];
+}
+
 public class CreateProductDto
 {
     [Required, MaxLength(200)]
+    [RegularExpression(@"^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s]+$",
+        ErrorMessage = "Solo se permiten letras y números.")]
     public string Name { get; set; } = string.Empty;
 
     [MaxLength(500)]
+    [RegularExpression(@"^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s]*$",
+        ErrorMessage = "Solo se permiten letras y números.")]
     public string Description { get; set; } = string.Empty;
 
-    [Required, MaxLength(100)]
+    [Required]
+    [AllowedValues("Electronica", "Muebles", "Ropa", "Calzado", "Alimentos",
+                   "Bebidas", "Herramientas", "Papeleria", "Limpieza",
+                   "Deportes", "Juguetes", "Otros",
+                   ErrorMessage = "Categoría no válida.")]
     public string Category { get; set; } = string.Empty;
 
     [Required, MaxLength(50)]
+    [RegularExpression(@"^[a-zA-Z0-9]+$",
+        ErrorMessage = "Solo se permiten letras y números.")]
     public string SKU { get; set; } = string.Empty;
 
     public int Stock { get; set; }
@@ -36,15 +68,25 @@ public class CreateProductDto
 public class UpdateProductDto
 {
     [Required, MaxLength(200)]
+    [RegularExpression(@"^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s]+$",
+        ErrorMessage = "Solo se permiten letras y números.")]
     public string Name { get; set; } = string.Empty;
 
     [MaxLength(500)]
+    [RegularExpression(@"^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s]*$",
+        ErrorMessage = "Solo se permiten letras y números.")]
     public string Description { get; set; } = string.Empty;
 
-    [Required, MaxLength(100)]
+    [Required]
+    [AllowedValues("Electronica", "Muebles", "Ropa", "Calzado", "Alimentos",
+                   "Bebidas", "Herramientas", "Papeleria", "Limpieza",
+                   "Deportes", "Juguetes", "Otros",
+                   ErrorMessage = "Categoría no válida.")]
     public string Category { get; set; } = string.Empty;
 
     [Required, MaxLength(50)]
+    [RegularExpression(@"^[a-zA-Z0-9]+$",
+        ErrorMessage = "Solo se permiten letras y números.")]
     public string SKU { get; set; } = string.Empty;
 
     public int Stock { get; set; }
@@ -64,6 +106,8 @@ public class ProductLotResponseDto
 public class CreateProductLotDto
 {
     [Required, MaxLength(50)]
+    [RegularExpression(@"^[a-zA-Z0-9\-]+$",
+        ErrorMessage = "Solo se permiten letras, números y guion medio.")]
     public string LotNumber { get; set; } = string.Empty;
 
     [Range(0.01, double.MaxValue)]
@@ -81,6 +125,8 @@ public class CreateProductLotDto
 public class UpdateProductLotDto
 {
     [Required, MaxLength(50)]
+    [RegularExpression(@"^[a-zA-Z0-9\-]+$",
+        ErrorMessage = "Solo se permiten letras, números y guion medio.")]
     public string LotNumber { get; set; } = string.Empty;
 
     [Range(0.01, double.MaxValue)]

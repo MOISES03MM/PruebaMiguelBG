@@ -69,9 +69,6 @@ export function LoginPage() {
           </form>
         </div>
 
-        <p className="text-center text-xs text-gray-400 mt-4">
-          admin / admin123 — viewer / viewer123
-        </p>
       </div>
     </div>
   );

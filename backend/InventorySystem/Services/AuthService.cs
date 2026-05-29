@@ -12,19 +12,32 @@ public class AuthService : IAuthService
 {
     private readonly IUserRepository _userRepository;
     private readonly IConfiguration _configuration;
+    private readonly ILogger<AuthService> _logger;
 
-    public AuthService(IUserRepository userRepository, IConfiguration configuration)
+    public AuthService(IUserRepository userRepository, IConfiguration configuration, ILogger<AuthService> logger)
     {
         _userRepository = userRepository;
         _configuration = configuration;
+        _logger = logger;
     }
 
     public async Task<LoginResponseDto?> LoginAsync(LoginRequestDto request)
     {
         var user = await _userRepository.GetByUsernameAsync(request.Username);
 
-        if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+        if (user == null)
+        {
+            _logger.LogWarning("Failed login attempt: user '{Username}' not found", request.Username);
             return null;
+        }
+
+        if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+        {
+            _logger.LogWarning("Failed login attempt: invalid password for user '{Username}'", request.Username);
+            return null;
+        }
+
+        _logger.LogInformation("Successful login for user '{Username}' with role '{Role}'", user.Username, user.Role);
 
         var token = GenerateJwtToken(user.Id, user.Username, user.Role);
 

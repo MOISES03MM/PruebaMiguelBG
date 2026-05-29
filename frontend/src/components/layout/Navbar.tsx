@@ -7,6 +7,7 @@ export function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  //const isAdmin = user?.role === 'Admin';
 
   const handleLogout = () => {
     logout();
@@ -30,7 +31,9 @@ export function Navbar() {
               <span className="text-lg font-bold text-gray-800 hidden sm:block">Inventory</span>
             </Link>
             <div className="hidden md:flex gap-1 ml-4">
+              
               <Link to="/dashboard" className={linkClass('/dashboard')}>Dashboard</Link>
+
               <Link to="/products" className={linkClass('/products')}>Productos</Link>
             </div>
           </div>

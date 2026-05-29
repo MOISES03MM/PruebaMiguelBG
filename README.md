@@ -22,7 +22,7 @@ Sistema web de inventario de productos con autenticación JWT, CRUD completo con
 ```bash
 # Clonar el repositorio
 git clone <url-del-repo>
-cd PruebaBG
+cd PRUEBAMIGUELBG
 
 # Levantar todo el stack
 docker-compose up --build

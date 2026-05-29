@@ -7,11 +7,13 @@ public class ExceptionMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly ILogger<ExceptionMiddleware> _logger;
+    private readonly IHostEnvironment _env;
 
-    public ExceptionMiddleware(RequestDelegate next, ILogger<ExceptionMiddleware> logger)
+    public ExceptionMiddleware(RequestDelegate next, ILogger<ExceptionMiddleware> logger, IHostEnvironment env)
     {
         _next = next;
         _logger = logger;
+        _env = env;
     }
 
     public async Task InvokeAsync(HttpContext context)
@@ -22,22 +24,20 @@ public class ExceptionMiddleware
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unhandled exception: {Message}", ex.Message);
+            _logger.LogError(ex, "Unhandled exception on {Method} {Path}: {Message}",
+                context.Request.Method, context.Request.Path, ex.Message);
             await HandleExceptionAsync(context, ex);
         }
     }
 
-    private static async Task HandleExceptionAsync(HttpContext context, Exception exception)
+    private async Task HandleExceptionAsync(HttpContext context, Exception exception)
     {
         context.Response.ContentType = "application/json";
         context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
 
-        var response = new
-        {
-            StatusCode = context.Response.StatusCode,
-            Message = "Internal server error.",
-            Detail = exception.Message
-        };
+        object response = _env.IsDevelopment()
+            ? new { statusCode = context.Response.StatusCode, message = "Internal server error.", detail = exception.Message }
+            : new { statusCode = context.Response.StatusCode, message = "Internal server error." };
 
         var json = JsonSerializer.Serialize(response, new JsonSerializerOptions
         {

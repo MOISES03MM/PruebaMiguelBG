@@ -124,12 +124,12 @@ export function ProductLotsModal({ productId, onClose }: Props) {
               <div className="text-xs text-gray-500 mb-2">
                 Máximo asignable: {editingLot ? (product?.stock ?? 0) + editingLot.quantity : product?.stock ?? 0} unidades
               </div>
-              <Input id="lotNumber" label="Número de Lote" error={errors.lotNumber?.message} {...register('lotNumber')} />
+              <Input id="lotNumber" label="Número de Lote" required error={errors.lotNumber?.message} {...register('lotNumber')} />
               <div className="grid grid-cols-2 gap-3">
-                <Input id="price" label="Precio" type="number" step="0.01" error={errors.price?.message} {...register('price')} />
-                <Input id="quantity" label="Cantidad" type="number" error={errors.quantity?.message} {...register('quantity')} />
+                <Input id="price" label="Precio" type="number" step="0.01" required error={errors.price?.message} {...register('price')} />
+                <Input id="quantity" label="Cantidad" type="number" required error={errors.quantity?.message} {...register('quantity')} />
               </div>
-              <Input id="entryDate" label="Fecha de Ingreso" type="date" error={errors.entryDate?.message} {...register('entryDate')} />
+              <Input id="entryDate" label="Fecha de Ingreso" type="date" required max={new Date().toISOString().split('T')[0]} error={errors.entryDate?.message} {...register('entryDate')} />
               <Input id="notes" label="Notas" error={errors.notes?.message} {...register('notes')} />
               <div className="flex justify-end gap-2">
                 <Button variant="secondary" type="button" onClick={() => setShowForm(false)}>Cancelar</Button>

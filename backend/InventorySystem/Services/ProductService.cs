@@ -1,7 +1,9 @@
+using InventorySystem.Data;
 using InventorySystem.DTOs;
 using InventorySystem.Models;
 using InventorySystem.Repositories.Interfaces;
 using InventorySystem.Services.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace InventorySystem.Services;
 
@@ -10,15 +12,18 @@ public class ProductService : IProductService
     private readonly IProductRepository _productRepository;
     private readonly IProductLotRepository _lotRepository;
     private readonly ILogger<ProductService> _logger;
+    private readonly AppDbContext _context;
 
     public ProductService(
         IProductRepository productRepository,
         IProductLotRepository lotRepository,
-        ILogger<ProductService> logger)
+        ILogger<ProductService> logger,
+        AppDbContext context)
     {
         _productRepository = productRepository;
         _lotRepository = lotRepository;
         _logger = logger;
+        _context = context;
     }
 
     public async Task<PaginatedResponseDto<ProductResponseDto>> GetAllAsync(
@@ -117,33 +122,47 @@ public class ProductService : IProductService
         var product = await _productRepository.GetByIdAsync(productId);
         if (product == null) return null;
 
-        var existingLots = await _lotRepository.GetByProductIdAsync(productId);
-        if (existingLots.Any(l => l.LotNumber == dto.LotNumber))
+        var lotNumberExists = await _context.ProductLots
+            .AnyAsync(l => l.ProductId == productId && l.LotNumber == dto.LotNumber);
+        if (lotNumberExists)
             throw new InvalidOperationException($"Ya existe un lote con número '{dto.LotNumber}'");
+
+        if (dto.EntryDate.Date > DateTime.UtcNow.Date)
+            throw new InvalidOperationException("La fecha de ingreso no puede ser futura.");
 
         if (dto.Quantity > product.Stock)
             throw new InvalidOperationException(
                 $"Stock insuficiente. Disponible: {product.Stock}, solicitado: {dto.Quantity}");
 
-        product.Stock -= dto.Quantity;
-        product.UpdatedAt = DateTime.UtcNow;
-        await _productRepository.UpdateAsync(product);
-
-        var lot = new ProductLot
+        await using var transaction = await _context.Database.BeginTransactionAsync();
+        try
         {
-            Id = Guid.NewGuid(),
-            ProductId = productId,
-            LotNumber = dto.LotNumber,
-            Price = dto.Price,
-            EntryDate = dto.EntryDate,
-            Quantity = dto.Quantity,
-            Notes = dto.Notes
-        };
+            product.Stock -= dto.Quantity;
+            product.UpdatedAt = DateTime.UtcNow;
+            await _productRepository.UpdateAsync(product);
 
-        await _lotRepository.CreateAsync(lot);
-        _logger.LogInformation("Lot created: {LotId} for product {ProductId}. Stock restante: {Stock}", lot.Id, productId, product.Stock);
+            var lot = new ProductLot
+            {
+                Id = Guid.NewGuid(),
+                ProductId = productId,
+                LotNumber = dto.LotNumber,
+                Price = dto.Price,
+                EntryDate = dto.EntryDate,
+                Quantity = dto.Quantity,
+                Notes = dto.Notes
+            };
 
-        return MapLotToDto(lot);
+            await _lotRepository.CreateAsync(lot);
+            await transaction.CommitAsync();
+
+            _logger.LogInformation("Lot created: {LotId} for product {ProductId}. Stock restante: {Stock}", lot.Id, productId, product.Stock);
+            return MapLotToDto(lot);
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
     }
 
     public async Task<ProductLotResponseDto?> UpdateLotAsync(Guid productId, Guid lotId, UpdateProductLotDto dto)
@@ -154,9 +173,13 @@ public class ProductService : IProductService
         var product = await _productRepository.GetByIdAsync(productId);
         if (product == null) return null;
 
-        var existingLots = await _lotRepository.GetByProductIdAsync(productId);
-        if (existingLots.Any(l => l.LotNumber == dto.LotNumber && l.Id != lotId))
+        var lotNumberExists = await _context.ProductLots
+            .AnyAsync(l => l.ProductId == productId && l.LotNumber == dto.LotNumber && l.Id != lotId);
+        if (lotNumberExists)
             throw new InvalidOperationException($"Ya existe otro lote con número '{dto.LotNumber}'");
+
+        if (dto.EntryDate.Date > DateTime.UtcNow.Date)
+            throw new InvalidOperationException("La fecha de ingreso no puede ser futura.");
 
         var difference = dto.Quantity - lot.Quantity;
 
@@ -164,20 +187,30 @@ public class ProductService : IProductService
             throw new InvalidOperationException(
                 $"Stock insuficiente. Disponible: {product.Stock}, adicional solicitado: {difference}");
 
-        product.Stock -= difference;
-        product.UpdatedAt = DateTime.UtcNow;
-        await _productRepository.UpdateAsync(product);
+        await using var transaction = await _context.Database.BeginTransactionAsync();
+        try
+        {
+            product.Stock -= difference;
+            product.UpdatedAt = DateTime.UtcNow;
+            await _productRepository.UpdateAsync(product);
 
-        lot.LotNumber = dto.LotNumber;
-        lot.Price = dto.Price;
-        lot.EntryDate = dto.EntryDate;
-        lot.Quantity = dto.Quantity;
-        lot.Notes = dto.Notes;
+            lot.LotNumber = dto.LotNumber;
+            lot.Price = dto.Price;
+            lot.EntryDate = dto.EntryDate;
+            lot.Quantity = dto.Quantity;
+            lot.Notes = dto.Notes;
 
-        await _lotRepository.UpdateAsync(lot);
-        _logger.LogInformation("Lot updated: {LotId}. Stock restante: {Stock}", lotId, product.Stock);
+            await _lotRepository.UpdateAsync(lot);
+            await transaction.CommitAsync();
 
-        return MapLotToDto(lot);
+            _logger.LogInformation("Lot updated: {LotId}. Stock restante: {Stock}", lotId, product.Stock);
+            return MapLotToDto(lot);
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
     }
 
     public async Task<bool> DeleteLotAsync(Guid productId, Guid lotId)
@@ -186,17 +219,26 @@ public class ProductService : IProductService
         if (lot == null || lot.ProductId != productId) return false;
 
         var product = await _productRepository.GetByIdAsync(productId);
-        if (product != null)
+        if (product == null) return false;
+
+        await using var transaction = await _context.Database.BeginTransactionAsync();
+        try
         {
             product.Stock += lot.Quantity;
             product.UpdatedAt = DateTime.UtcNow;
             await _productRepository.UpdateAsync(product);
+
+            await _lotRepository.DeleteAsync(lot);
+            await transaction.CommitAsync();
+
+            _logger.LogInformation("Lot deleted: {LotId}. Stock devuelto: {Quantity}", lotId, lot.Quantity);
+            return true;
         }
-
-        await _lotRepository.DeleteAsync(lot);
-        _logger.LogInformation("Lot deleted: {LotId}. Stock devuelto: {Quantity}", lotId, lot.Quantity);
-
-        return true;
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
     }
 
     private static ProductResponseDto MapToDto(Product product)

@@ -38,6 +38,7 @@ public class ProductsController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Create([FromBody] CreateProductDto dto)
     {
         try
@@ -52,6 +53,7 @@ public class ProductsController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateProductDto dto)
     {
         try
@@ -67,6 +69,7 @@ public class ProductsController : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(Guid id)
     {
         var result = await _productService.DeleteAsync(id);
@@ -82,6 +85,7 @@ public class ProductsController : ControllerBase
     }
 
     [HttpPost("{id:guid}/lots")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> CreateLot(Guid id, [FromBody] CreateProductLotDto dto)
     {
         try
@@ -97,6 +101,7 @@ public class ProductsController : ControllerBase
     }
 
     [HttpPut("{id:guid}/lots/{lotId:guid}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> UpdateLot(Guid id, Guid lotId, [FromBody] UpdateProductLotDto dto)
     {
         try
@@ -112,6 +117,7 @@ public class ProductsController : ControllerBase
     }
 
     [HttpDelete("{id:guid}/lots/{lotId:guid}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> DeleteLot(Guid id, Guid lotId)
     {
         var result = await _productService.DeleteLotAsync(id, lotId);

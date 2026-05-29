@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProducts } from '../../hooks/useProducts';
 import { usePagination } from '../../hooks/usePagination';
+import { useAuth } from '../../hooks/useAuth';
 import { Button } from '../../components/common/Button';
 import { Input } from '../../components/common/Input';
 import { Spinner } from '../../components/common/Spinner';
@@ -9,10 +10,13 @@ import { Modal } from '../../components/common/Modal';
 import { Pagination } from '../../components/common/Pagination';
 import { ProductLotsModal } from './ProductLotsModal';
 import { formatDate } from '../../utils/formatters';
+import { CATEGORIES } from '../../constants';
 import type { Product } from '../../types/product.types';
 
 export function ProductListPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'Admin';
   const { products, loading, fetchProducts, deleteProduct } = useProducts();
   const { page, pageSize, nextPage, prevPage, changePageSize, reset } = usePagination();
 
@@ -43,7 +47,7 @@ export function ProductListPage() {
     <div>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h1 className="text-2xl font-bold text-gray-800">Productos</h1>
-        <Button onClick={() => navigate('/products/new')}>+ Nuevo Producto</Button>
+        {isAdmin && <Button onClick={() => navigate('/products/new')}>+ Nuevo Producto</Button>}
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
@@ -53,12 +57,16 @@ export function ProductListPage() {
           onChange={e => setSearch(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleSearch()}
         />
-        <Input
-          placeholder="Filtrar por categoría..."
+        <select
           value={categoryFilter}
           onChange={e => setCategoryFilter(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && handleSearch()}
-        />
+          className="px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+        >
+          <option value="">Todas las categorías</option>
+          {CATEGORIES.map(cat => (
+            <option key={cat} value={cat}>{cat}</option>
+          ))}
+        </select>
         <Button variant="secondary" onClick={handleSearch}>Buscar</Button>
       </div>
 
@@ -81,7 +89,7 @@ export function ProductListPage() {
                   <th className="text-left px-5 py-3.5 font-medium text-gray-500 uppercase text-xs tracking-wider">Categoría</th>
                   <th className="text-left px-5 py-3.5 font-medium text-gray-500 uppercase text-xs tracking-wider">Stock</th>
                   <th className="text-left px-5 py-3.5 font-medium text-gray-500 uppercase text-xs tracking-wider">Creado</th>
-                  <th className="text-right px-5 py-3.5 font-medium text-gray-500 uppercase text-xs tracking-wider">Acciones</th>
+                  {isAdmin && <th className="text-right px-5 py-3.5 font-medium text-gray-500 uppercase text-xs tracking-wider">Acciones</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -96,13 +104,15 @@ export function ProductListPage() {
                       <StockBadge stock={product.stock} />
                     </td>
                     <td className="px-5 py-4 text-gray-400 text-xs">{formatDate(product.createdAt)}</td>
-                    <td className="px-5 py-4">
-                      <div className="flex justify-end gap-1">
-                        <ActionButton label="Lotes" color="green" onClick={() => setLotsProductId(product.id)} />
-                        <ActionButton label="Editar" color="blue" onClick={() => navigate(`/products/${product.id}/edit`)} />
-                        <ActionButton label="Eliminar" color="red" onClick={() => setDeleteId(product.id)} />
-                      </div>
-                    </td>
+                    {isAdmin && (
+                      <td className="px-5 py-4">
+                        <div className="flex justify-end gap-1">
+                          <ActionButton label="Lotes" color="green" onClick={() => setLotsProductId(product.id)} />
+                          <ActionButton label="Editar" color="blue" onClick={() => navigate(`/products/${product.id}/edit`)} />
+                          <ActionButton label="Eliminar" color="red" onClick={() => setDeleteId(product.id)} />
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -115,6 +125,7 @@ export function ProductListPage() {
               <ProductCard
                 key={product.id}
                 product={product}
+                isAdmin={isAdmin}
                 onLots={() => setLotsProductId(product.id)}
                 onEdit={() => navigate(`/products/${product.id}/edit`)}
                 onDelete={() => setDeleteId(product.id)}
@@ -174,7 +185,7 @@ function ActionButton({ label, color, onClick }: { label: string; color: string;
   );
 }
 
-function ProductCard({ product, onLots, onEdit, onDelete }: { product: Product; onLots: () => void; onEdit: () => void; onDelete: () => void }) {
+function ProductCard({ product, isAdmin, onLots, onEdit, onDelete }: { product: Product; isAdmin: boolean; onLots: () => void; onEdit: () => void; onDelete: () => void }) {
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 space-y-3">
       <div className="flex justify-between items-start">
@@ -188,11 +199,13 @@ function ProductCard({ product, onLots, onEdit, onDelete }: { product: Product; 
         <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-xs">{product.category}</span>
         <span className="text-xs text-gray-400">{formatDate(product.createdAt)}</span>
       </div>
-      <div className="flex justify-end gap-1 pt-2 border-t border-gray-50">
-        <ActionButton label="Lotes" color="green" onClick={onLots} />
-        <ActionButton label="Editar" color="blue" onClick={onEdit} />
-        <ActionButton label="Eliminar" color="red" onClick={onDelete} />
-      </div>
+      {isAdmin && (
+        <div className="flex justify-end gap-1 pt-2 border-t border-gray-50">
+          <ActionButton label="Lotes" color="green" onClick={onLots} />
+          <ActionButton label="Editar" color="blue" onClick={onEdit} />
+          <ActionButton label="Eliminar" color="red" onClick={onDelete} />
+        </div>
+      )}
     </div>
   );
 }
