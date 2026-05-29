@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build
+dist/
+build/
+bin/
+obj/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# .NET
+*.user
+*.suo
+*.cache
+/packages/
+*.nupkg
+
+# Logs
+Logs/
+*.log
+
+# Docker
+sqlserver_data/
+
+
