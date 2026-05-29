@@ -18,6 +18,7 @@ public class ProductRepository : IProductRepository
         int page, int pageSize, string? name, string? category, string? sku)
     {
         var query = _context.Products
+            .AsNoTracking()
             .Where(p => p.IsActive)
             .AsQueryable();
 

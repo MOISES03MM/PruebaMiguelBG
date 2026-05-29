@@ -14,7 +14,7 @@ export function LoginPage() {
   const { handleLogin, isLoading, error, clearError, isAuthenticated } = useAuth();
 
   const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
+    resolver: zodResolver(loginSchema) as any,
   });
 
   useEffect(() => {
@@ -32,41 +32,46 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-gray-100 px-4">
+      <div className="max-w-sm w-full">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-blue-600">Inventory System</h1>
-          <p className="text-gray-500 mt-2">Ingresa tus credenciales</p>
+          <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <span className="text-white text-2xl font-bold">IS</span>
+          </div>
+          <h1 className="text-2xl font-bold text-gray-800">Inventory System</h1>
+          <p className="text-gray-400 text-sm mt-1">Ingresa tus credenciales para continuar</p>
         </div>
 
-        {error && <div className="mb-4"><ErrorMessage message={error} /></div>}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+          {error && <div className="mb-4"><ErrorMessage message={error} /></div>}
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-          <Input
-            id="username"
-            label="Usuario"
-            placeholder="admin"
-            error={errors.username?.message}
-            {...register('username')}
-          />
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <Input
+              id="username"
+              label="Usuario"
+              placeholder="admin"
+              error={errors.username?.message}
+              {...register('username')}
+            />
 
-          <Input
-            id="password"
-            label="Contraseña"
-            type="password"
-            placeholder="••••••••"
-            error={errors.password?.message}
-            {...register('password')}
-          />
+            <Input
+              id="password"
+              label="Contraseña"
+              type="password"
+              placeholder="••••••••"
+              error={errors.password?.message}
+              {...register('password')}
+            />
 
-          <Button type="submit" isLoading={isLoading} className="w-full">
-            Iniciar Sesión
-          </Button>
-        </form>
-
-        <div className="mt-6 text-center text-xs text-gray-400">
-          <p>admin / admin123 — viewer / viewer123</p>
+            <Button type="submit" isLoading={isLoading} className="w-full">
+              Iniciar Sesión
+            </Button>
+          </form>
         </div>
+
+        <p className="text-center text-xs text-gray-400 mt-4">
+          admin / admin123 — viewer / viewer123
+        </p>
       </div>
     </div>
   );

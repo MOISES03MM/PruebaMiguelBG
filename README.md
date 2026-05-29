@@ -177,3 +177,25 @@ npm run build --prefix frontend
 # Lint
 npm run lint --prefix frontend
 ```
+
+---
+
+## Evidencia
+
+### Login
+![Login](imagenes/Login.jpeg)
+
+### Dashboard
+![Dashboard](imagenes/dashboard.jpeg)
+
+### Productos
+![Productos](imagenes/productos.jpeg)
+
+### Nuevo Producto
+![Nuevo Producto](imagenes/nuevoProducto.jpeg)
+
+### Gestión de Lotes
+![Gestión de Lotes](imagenes/gestionLotes.jpeg)
+
+### Documentación Swagger
+![Documentación Swagger](imagenes/documentacionSwagger.jpeg)
